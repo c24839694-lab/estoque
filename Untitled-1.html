@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#e83f82">
+<title>Doces da Analu • Estoque</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --pink:#e83f82;
+  --pink-dark:#cf286a;
+  --pink-light:#fff0f6;
+  --pink-soft:#fff8fb;
+  --text:#252331;
+  --muted:#777281;
+  --line:#f1dbe5;
+  --white:#fff;
+  --green:#299451;
+  --green-bg:#eaf8ee;
+  --orange:#d88913;
+  --orange-bg:#fff5df;
+  --red:#d83d50;
+  --red-bg:#ffe9ed;
+  --shadow:0 5px 22px rgba(91,34,62,.07);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;min-height:100%;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:var(--pink-soft)}
+body{padding-bottom:76px}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:active{transform:scale(.98)}
+.app{min-height:100vh}
+.sidebar{
+  display:none;
+  position:fixed;inset:0 auto 0 0;width:250px;background:#fff;
+  border-right:1px solid var(--line);z-index:50;padding:18px 12px;
+}
+.brand{padding:4px 10px 20px;text-align:center}
+.brand img{width:175px;max-width:100%;display:block;margin:auto;border-radius:50%}
+.nav button{
+  width:100%;border:0;background:transparent;text-align:left;padding:13px 14px;
+  border-radius:12px;margin:3px 0;color:var(--text);display:flex;gap:12px;align-items:center;
+}
+.nav button.active,.nav button:hover{background:var(--pink-light);color:var(--pink)}
+.nav .ico{width:25px;text-align:center;font-size:19px}
+.main{width:100%}
+.top{
+  position:sticky;top:0;z-index:20;height:68px;background:rgba(255,255,255,.96);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;padding:8px 14px;
+}
+.mobile-logo{display:block;width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid #f4d6e3}
+.top-copy{min-width:0;flex:1;margin-left:10px}
+.top h1{font-size:16px;line-height:1.2;margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top p{font-size:11px;color:var(--muted);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{display:flex;gap:7px;margin-left:8px}
+.icon-btn,.pink-btn{
+  border:0;display:flex;align-items:center;justify-content:center;border-radius:12px;
+  min-width:42px;height:42px;padding:0 12px;
+}
+.icon-btn{background:var(--pink-light);color:var(--pink);font-size:18px}
+.pink-btn{background:var(--pink);color:#fff;font-weight:750;box-shadow:0 5px 15px rgba(232,63,130,.2)}
+.content{width:100%;max-width:1100px;margin:auto;padding:14px 12px 25px}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:21px;margin:5px 0 4px}.page-sub{font-size:12px;color:var(--muted);margin:0 0 15px}
+.cards{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px
+}
+.card,.panel{
+  background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)
+}
+.metric{padding:14px;min-height:105px;position:relative;overflow:hidden}
+.metric small{display:block;color:var(--muted);font-size:11px;margin-bottom:7px}
+.metric .big{font-size:22px;font-weight:800;line-height:1.1}
+.metric .bubble{
+  position:absolute;right:11px;top:11px;width:34px;height:34px;border-radius:50%;
+  background:var(--pink-light);color:var(--pink);display:grid;place-items:center;font-size:16px
+}
+.metric .hint{font-size:10px;color:var(--pink);margin-top:7px}
+.panel{padding:14px;margin-bottom:12px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.panel-head h2{font-size:16px;margin:0}
+.link-btn{border:0;background:transparent;color:var(--pink);font-weight:700;font-size:12px;padding:5px}
+.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.quick{
+  min-height:94px;background:#fff;border:1px solid var(--line);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--text);padding:10px
+}
+.quick .qicon{width:36px;height:36px;border-radius:50%;background:var(--pink-light);color:var(--pink);display:grid;place-items:center;font-size:18px;margin-bottom:7px}
+.quick strong{font-size:12px}
+.summary-list{display:flex;flex-direction:column}
+.summary-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 0;border-bottom:1px solid #f5e7ed}
+.summary-row:last-child{border-bottom:0}
+.summary-main{min-width:0}
+.summary-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-meta{font-size:10px;color:var(--muted);margin-top:3px}
+.summary-stock{text-align:right;white-space:nowrap;font-size:13px;font-weight:800}
+.badge{display:inline-flex;align-items:center;padding:5px 8px;border-radius:99px;font-size:10px;font-weight:800;margin-top:3px}
+.normal{background:var(--green-bg);color:var(--green)}
+.attention{background:var(--orange-bg);color:var(--orange)}
+.danger{background:var(--red-bg);color:var(--red)}
+.searchbar{display:flex;gap:8px;margin-bottom:10px}
+.search{
+  width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;padding:12px 13px;
+  background:#fff;outline:0;font-size:13px
+}
+.search:focus,.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--pink);box-shadow:0 0 0 3px var(--pink-light)}
+.filter{
+  border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 10px;color:var(--text);
+  min-width:105px
+}
+.chips{display:flex;gap:7px;overflow:auto;padding-bottom:4px;margin-bottom:11px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 12px;font-size:11px}
+.chip.active{background:var(--pink);border-color:var(--pink);color:#fff}
+.stock-list{display:flex;flex-direction:column;gap:9px}
+.stock-item{
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;
+  display:flex;align-items:center;gap:10px
+}
+.stock-icon{
+  width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:var(--pink-light);
+  display:grid;place-items:center;color:var(--pink);font-size:19px
+}
+.stock-info{min-width:0;flex:1}
+.stock-name{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stock-detail{font-size:10px;color:var(--muted);margin-top:3px}
+.stock-right{text-align:right;white-space:nowrap}
+.stock-cost{font-size:10px;color:var(--muted)}
+.stock-qty{font-size:14px;font-weight:850}
+.stock-actions{display:flex;gap:5px;margin-top:6px;justify-content:flex-end}
+.stock-edit{border:0;background:var(--pink-light);color:var(--pink);border-radius:9px;padding:7px 9px;font-size:10px;font-weight:750}
+.stock-restock{background:var(--green-bg);color:var(--green)}
+.empty{text-align:center;padding:30px 10px;color:var(--muted);font-size:12px}
+.form-grid{display:grid;grid-template-columns:1fr;gap:11px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;font-weight:800}
+.field input,.field select,.field textarea{
+  width:100%;border:1px solid var(--line);border-radius:11px;padding:12px;background:#fff;outline:0;font-size:13px
+}
+.field textarea{min-height:85px;resize:vertical}
+.full{grid-column:1/-1}
+.form-actions{display:flex;gap:8px;margin-top:14px}
+.form-actions button{flex:1;height:45px;border-radius:11px;font-weight:750}
+.secondary{border:1px solid var(--line);background:#fff;color:var(--text)}
+.primary{border:0;background:var(--pink);color:#fff}
+.section-label{font-size:12px;font-weight:850;margin:17px 0 9px}
+.help{font-size:10px;color:var(--muted);line-height:1.45;margin-top:5px}
+.pack-preview{font-size:11px;color:var(--pink);font-weight:750;margin-top:2px}
+.material-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.material{
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center
+}
+.material .mi{width:35px;height:35px;margin:auto;border-radius:50%;background:var(--pink-light);color:var(--pink);display:grid;place-items:center}
+.material b{display:block;font-size:12px;margin:7px 0 3px}
+.material span{font-size:10px;color:var(--muted)}
+.production-row{
+  border:1px solid var(--line);border-radius:13px;padding:10px;margin-bottom:9px;background:#fff
+}
+.production-row-main{display:grid;grid-template-columns:minmax(0,1fr) 85px 38px;gap:7px}
+.production-row-main select,.production-row-main input{
+  width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 8px;background:#fff;outline:0;font-size:12px
+}
+.pack-hint{
+  display:none;margin-top:7px;border:1px dashed #e7a5bd;background:var(--pink-light);color:var(--pink);
+  border-radius:9px;padding:7px 9px;font-size:10.5px;font-weight:750;width:100%;text-align:left
+}
+.price-row{
+  display:grid;grid-template-columns:minmax(0,1fr) 85px 38px;gap:7px;margin-bottom:8px
+}
+.price-row select,.price-row input{
+  width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 8px;background:#fff;outline:0;font-size:12px
+}
+.remove{border:1px solid #f2c3ce;background:#fff;color:var(--red);border-radius:10px}
+.add-row{
+  width:100%;height:42px;border:1px dashed #e7a5bd;background:var(--pink-light);color:var(--pink);
+  border-radius:11px;font-weight:750;font-size:12px
+}
+.total-box{background:var(--pink-light);border-radius:13px;padding:13px;margin-top:12px}
+.total-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:5px 0}
+.total-line strong{font-size:15px;color:var(--pink)}
+.notice{background:var(--orange-bg);color:#7b510e;border-radius:11px;padding:10px;font-size:11px;line-height:1.4;margin-bottom:10px}
+.history-item{border-bottom:1px solid #f4e5eb;padding:12px 0}
+.history-item:last-child{border-bottom:0}
+.history-title{font-weight:800;font-size:12px}
+.history-meta{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5}
+.modal{
+  position:fixed;inset:0;background:rgba(31,17,26,.5);z-index:100;display:none;
+  align-items:flex-end;justify-content:center
+}
+.modal.open{display:flex}
+.modal-box{
+  width:100%;max-height:92vh;overflow:auto;background:#fff;border-radius:20px 20px 0 0;
+  padding:16px 14px 25px;box-shadow:0 -10px 40px rgba(0,0,0,.15)
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.modal-head h2{font-size:17px;margin:0}
+.close{width:36px;height:36px;border:0;background:var(--pink-light);color:var(--pink);border-radius:50%;font-size:18px}
+.bottom-nav{
+  position:fixed;left:0;right:0;bottom:0;height:70px;background:rgba(255,255,255,.97);
+  backdrop-filter:blur(15px);border-top:1px solid var(--line);z-index:60;
+  display:grid;grid-template-columns:repeat(5,1fr);padding:6px 4px calc(6px + env(safe-area-inset-bottom))
+}
+.bottom-nav button{
+  border:0;background:transparent;color:#777281;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;border-radius:11px;font-size:9px;font-weight:700
+}
+.bottom-nav button.active{color:var(--pink);background:var(--pink-light)}
+.bottom-nav .bi{font-size:20px;line-height:20px}
+.toast{
+  position:fixed;left:12px;right:12px;bottom:82px;background:#2c2730;color:#fff;padding:12px 14px;
+  border-radius:12px;font-size:12px;z-index:150;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none;text-align:center
+}
+.toast.show{opacity:1;transform:none}
+.desktop-only{display:none}
+.auth-overlay{position:fixed;inset:0;background:var(--pink-soft);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.auth-overlay.open{display:flex}
+.auth-card{width:100%;max-width:360px;background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:26px 22px;text-align:center}
+.auth-card img{width:90px;height:90px;border-radius:50%;margin:0 auto 14px;display:block;object-fit:cover}
+.auth-card h2{margin:0 0 4px;font-size:19px}
+.auth-card p{margin:0 0 18px;font-size:12px;color:var(--muted)}
+.auth-card .field{text-align:left;margin-bottom:11px}
+.auth-error{color:var(--red);font-size:11px;margin-top:9px;min-height:14px}
+.auth-loading{font-size:11px;color:var(--muted);margin-top:9px;min-height:14px}
+@media(min-width:760px){
+  body{padding-bottom:0}
+  .sidebar{display:block}
+  .main{margin-left:250px;width:calc(100% - 250px)}
+  .mobile-logo{display:none}
+  .top{height:78px;padding:10px 25px}
+  .top h1{font-size:20px}.top p{font-size:12px}
+  .content{padding:25px}
+  .cards{grid-template-columns:repeat(4,1fr);gap:14px}
+  .metric{min-height:120px}
+  .quick-grid{grid-template-columns:repeat(4,1fr)}
+  .form-grid{grid-template-columns:repeat(2,1fr)}
+  .material-cards{grid-template-columns:repeat(4,1fr)}
+  .bottom-nav{display:none}
+  .desktop-only{display:block}
+  .modal{align-items:center}
+  .modal-box{width:min(650px,92vw);border-radius:20px}
+}
+@media(min-width:1050px){
+  .dashboard-grid{display:grid;grid-template-columns:1.35fr .85fr;gap:12px}
+  .dashboard-grid .panel{height:100%}
+  .material-cards{grid-template-columns:repeat(7,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <img src="https://i.ibb.co/Q7DLDcvB/logo.jpg" alt="Doces da Analu">
+    <h2>Doces da Analu</h2>
+    <p>Entre para acessar o estoque.</p>
+    <div class="field"><label>E-mail</label><input id="authEmail" type="email" placeholder="seu@email.com" autocomplete="username"></div>
+    <div class="field"><label>Senha</label><input id="authPassword" type="password" placeholder="Sua senha" autocomplete="current-password"></div>
+    <button class="primary" id="authLoginBtn" style="width:100%;height:45px;border-radius:11px;font-weight:750">Entrar</button>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-loading" id="authLoading"></div>
+  </div>
+</div>
+<div class="app" id="appRoot" style="display:none">
+<aside class="sidebar">
+  <div class="brand"><img src="https://i.ibb.co/Q7DLDcvB/logo.jpg" alt="Doces da Analu"></div>
+  <nav class="nav">
+    <button class="active" data-page="dashboard"><span class="ico">⌂</span><span>Início</span></button>
+    <button data-page="estoque"><span class="ico">▣</span><span>Estoque</span></button>
+    <button data-page="producao"><span class="ico">🧁</span><span>Produção</span></button>
+    <button data-page="precificacao"><span class="ico">＄</span><span>Precificação</span></button>
+    <button data-page="produtos"><span class="ico">＋</span><span>Produtos</span></button>
+    <button data-page="materiais"><span class="ico">✦</span><span>Materiais</span></button>
+  </nav>
+</aside>
+
+<main class="main">
+<header class="top">
+  <img class="mobile-logo" src="https://i.ibb.co/Q7DLDcvB/logo.jpg" alt="Doces da Analu">
+  <div class="top-copy">
+    <h1 id="topTitle">Olá, Analu! 👋</h1>
+    <p id="topSub">Seu estoque em um só lugar.</p>
+  </div>
+  <div class="top-actions">
+    <button class="icon-btn" id="refresh" title="Atualizar">↻</button>
+    <button class="icon-btn" id="logoutBtn" title="Sair">⎋</button>
+    <button class="pink-btn" id="newProduct">＋ <span class="desktop-only">Produto</span></button>
+  </div>
+</header>
+
+<section class="content">
+
+<div class="page active" id="page-dashboard">
+  <h2 class="page-title">Resumo</h2>
+  <p class="page-sub">Veja rapidamente como está seu estoque.</p>
+
+  <div class="cards">
+    <div class="card metric"><small>Itens em estoque</small><div class="big" id="mItems">0</div><div class="hint">produtos cadastrados</div><div class="bubble">▣</div></div>
+    <div class="card metric"><small>Estoque baixo</small><div class="big" id="mLow">0</div><div class="hint">precisam de atenção</div><div class="bubble">!</div></div>
+    <div class="card metric"><small>Produções</small><div class="big" id="mProd">0</div><div class="hint">registradas</div><div class="bubble">🧁</div></div>
+    <div class="card metric"><small>Valor do estoque</small><div class="big" id="mValue">R$ 0,00</div><div class="hint">custo aproximado</div><div class="bubble">＄</div></div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="panel">
+      <div class="panel-head"><h2>Estoque atual</h2><button class="link-btn" onclick="go('estoque')">Ver tudo →</button></div>
+      <div class="summary-list" id="dashList"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Ações rápidas</h2></div>
+      <div class="quick-grid">
+        <button class="quick" onclick="openProduct()"><span class="qicon">＋</span><strong>Adicionar produto</strong></button>
+        <button class="quick" onclick="go('producao')"><span class="qicon">🧁</span><strong>Começar produção</strong></button>
+        <button class="quick" onclick="go('precificacao')"><span class="qicon">＄</span><strong>Precificar receita</strong></button>
+        <button class="quick" onclick="go('materiais')"><span class="qicon">✦</span><strong>Ver materiais</strong></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Materiais por tema</h2><button class="link-btn" onclick="go('materiais')">Ver todos →</button></div>
+    <div class="material-cards" id="dashMaterials"></div>
+  </div>
+</div>
+
+<div class="page" id="page-estoque">
+  <h2 class="page-title">Estoque</h2>
+  <p class="page-sub">Alimentos, materiais e utensílios em um único lugar.</p>
+  <div class="panel">
+    <div class="searchbar"><input class="search" id="stockSearch" placeholder="Pesquisar produto..."><select class="filter" id="stockFilter"><option value="">Todos</option><option value="alimenticio">Alimentos</option><option value="material">Materiais</option></select></div>
+    <div class="chips" id="stockChips">
+      <button class="chip active" data-stock-chip="">Todos</button>
+      <button class="chip" data-stock-chip="low">Estoque baixo</button>
+      <button class="chip" data-stock-chip="weight">Peso/volume</button>
+      <button class="chip" data-stock-chip="unit">Unidade</button>
+    </div>
+    <div class="stock-list" id="stockList"></div>
+  </div>
+</div>
+
+<div class="page" id="page-producao">
+  <h2 class="page-title">Começar produção</h2>
+  <p class="page-sub">Informe o que foi usado e o estoque será atualizado na hora.</p>
+  <div class="panel">
+    <div class="form-grid">
+      <div class="field"><label>Nome da produção</label><input id="prodName" placeholder="Ex.: Brigadeiro gourmet"></div>
+      <div class="field"><label>Quantidade produzida</label><input id="prodYield" type="number" min="0" step="1" placeholder="Ex.: 100"></div>
+    </div>
+    <div class="section-label">O que foi utilizado?</div>
+    <div id="productionRows"></div>
+    <button class="add-row" onclick="addProductionRow()">＋ Adicionar ingrediente</button>
+    <div class="notice" style="margin-top:11px">Ao finalizar, cada quantidade será descontada do estoque. Para itens usados de uma vez (ex.: leite condensado), toque em "usar embalagem inteira" que aparece abaixo do ingrediente. Se não houver quantidade suficiente, o sistema bloqueia a produção.</div>
+    <div class="form-actions"><button class="secondary" onclick="clearProduction()">Limpar</button><button class="primary" id="finishProduction">Finalizar produção</button></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Últimas produções</h2></div>
+    <div id="productionHistory"></div>
+  </div>
+</div>
+
+<div class="page" id="page-precificacao">
+  <h2 class="page-title">Precificação</h2>
+  <p class="page-sub">Monte uma receita usando os produtos cadastrados. O custo de cada ingrediente vem do preço da embalagem, não do estoque atual — então funciona mesmo com o estoque baixo ou zerado.</p>
+  <div class="panel">
+    <div class="form-grid">
+      <div class="field"><label>Nome da receita</label><input id="priceName" placeholder="Ex.: Brigadeiro"></div>
+      <div class="field"><label>Rendimento</label><input id="priceYield" type="number" min="1" step="1" value="100" placeholder="Unidades"></div>
+    </div>
+    <div class="section-label">Ingredientes</div>
+    <div id="priceRows"></div>
+    <button class="add-row" onclick="addPriceRow()">＋ Adicionar ingrediente</button>
+    <div class="total-box">
+      <div class="total-line"><span>Custo dos ingredientes</span><strong id="ingredientCost">R$ 0,00</strong></div>
+      <div class="total-line"><span>Custo por unidade</span><strong id="unitCostOut">R$ 0,00</strong></div>
+      <div class="total-line"><span>Margem desejada</span><input id="margin" type="number" value="100" min="0" step="1" style="width:75px;border:1px solid var(--line);border-radius:8px;padding:5px"> %</div>
+      <div class="total-line"><span>Preço sugerido por unidade</span><strong id="suggested">R$ 0,00</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-produtos">
+  <h2 class="page-title">Produtos</h2>
+  <p class="page-sub">Cadastre alimentos, materiais e utensílios.</p>
+  <div class="panel">
+    <div class="panel-head"><h2>Produtos cadastrados</h2><button class="pink-btn" onclick="openProduct()">＋ Adicionar</button></div>
+    <div class="searchbar"><input class="search" id="productSearch" placeholder="Pesquisar..."></div>
+    <div class="stock-list" id="productList"></div>
+  </div>
+</div>
+
+<div class="page" id="page-materiais">
+  <h2 class="page-title">Materiais</h2>
+  <p class="page-sub">Encontre rapidamente seus carimbos, ejetores, cortadores e outros itens por tema.</p>
+  <div class="panel">
+    <div class="searchbar"><input class="search" id="matSearch" placeholder="Pesquisar tema, cor ou item..."><select class="filter" id="matType"><option value="">Todos</option><option value="Carimbo">Carimbos</option><option value="Ejetor">Ejetores</option><option value="Cortador">Cortadores</option><option value="Outro">Outros</option></select></div>
+    <div class="material-cards" id="materialCards"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Lista de materiais</h2><button class="pink-btn" onclick="openProduct('material')">＋ Adicionar</button></div>
+    <div class="stock-list" id="materialList"></div>
+  </div>
+</div>
+
+</section>
+</main>
+</div>
+
+<nav class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="active" data-page="dashboard"><span class="bi">⌂</span>Início</button>
+  <button data-page="estoque"><span class="bi">▣</span>Estoque</button>
+  <button data-page="producao"><span class="bi">🧁</span>Produção</button>
+  <button data-page="precificacao"><span class="bi">＄</span>Preço</button>
+  <button data-page="produtos"><span class="bi">＋</span>Mais</button>
+</nav>
+
+<div class="modal" id="productModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2 id="modalTitle">Adicionar produto</h2><button class="close" onclick="closeModal()">×</button></div>
+    <div class="form-grid">
+      <div class="field full"><label>Nome</label><input id="fName" placeholder="Ex.: Manteiga"></div>
+      <div class="field"><label>Categoria</label><select id="fCategory"><option value="alimenticio">Produto alimentício</option><option value="material">Produto usável / material</option></select></div>
+      <div class="field" id="kindWrap" style="display:none"><label>Tipo de material</label><select id="fKind"><option>Carimbo</option><option>Ejetor</option><option>Cortador</option><option>Outro</option></select></div>
+      <div class="field" id="themeWrap" style="display:none"><label>Tema</label><input id="fTheme" placeholder="Ex.: Princesa, Safari, Mickey"></div>
+      <div class="field" id="colorWrap" style="display:none"><label>Cor / detalhe</label><input id="fColor" placeholder="Ex.: Azul, vermelho"></div>
+      <div class="field"><label>Como você usa este item nas receitas?</label><select id="fControl"><option value="weight">Uma parte da embalagem (peso/volume) — ex.: manteiga, açúcar</option><option value="unit">A embalagem inteira de uma vez (unidade) — ex.: leite condensado, pacote de granulado</option></select></div>
+      <div class="field" id="unitWrap"><label>Unidade de medida</label><select id="fUnit"><option value="g">gramas (g)</option><option value="kg">quilogramas (kg)</option><option value="ml">mililitros (ml)</option><option value="l">litros (L)</option></select></div>
+      <div class="field"><label id="fPackSizeLabel">Tamanho da embalagem</label><input id="fPackSize" type="number" min="0" step="0.001" placeholder="Ex.: 200"><div class="help" id="fPackSizeHelp">Quanto vem em UMA embalagem que você compra. Ex.: a manteiga vem em pacotes de 200 g.</div></div>
+      <div class="field"><label>Preço pago por embalagem</label><input id="fPackPrice" type="number" min="0" step="0.01" placeholder="Ex.: 12.90"><div class="help">Quanto você paga por UMA dessas embalagens. O custo por g/ml/unidade é calculado sozinho.</div></div>
+      <div class="field full"><div class="pack-preview" id="packPreview">Custo por unidade: R$ 0,00</div></div>
+      <div class="field"><label>Quantidade atual em estoque</label><input id="fQty" type="number" min="0" step="0.001" value="0"><div class="help">Quanto você já tem hoje, na mesma unidade escolhida acima.</div></div>
+      <div class="field"><label>Estoque mínimo (alerta)</label><input id="fMin" type="number" min="0" step="0.001" value="0"></div>
+      <div class="field"><label>Validade</label><input id="fExpiry" type="date"></div>
+      <div class="field full"><label>Observação</label><textarea id="fObs" placeholder="Ex.: guardar em local seco"></textarea></div>
+    </div>
+    <div class="form-actions"><button class="secondary" onclick="closeModal()">Cancelar</button><button class="primary" id="saveProduct">Salvar produto</button></div>
+  </div>
+</div>
+
+<div class="modal" id="restockModal">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-head"><h2>Repor estoque</h2><button class="close" onclick="closeRestock()">×</button></div>
+    <p class="page-sub" id="restockProductName" style="margin:-8px 0 14px"></p>
+    <div class="form-grid">
+      <div class="field"><label id="rQtyLabel">Quantas embalagens você comprou?</label><input id="rQty" type="number" min="0" step="0.001" value="1"></div>
+      <div class="field"><label>Preço pago agora (por embalagem)</label><input id="rPrice" type="number" min="0" step="0.01"></div>
+    </div>
+    <div class="pack-preview" id="restockPreview"></div>
+    <div class="form-actions"><button class="secondary" onclick="closeRestock()">Cancelar</button><button class="primary" id="confirmRestockBtn">Confirmar entrada no estoque</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ CONEXÃO COM SUPABASE ============
+   Cole a URL e a chave "anon" do seu projeto Supabase abaixo.
+   Enquanto não conectar, o app funciona salvando os dados neste dispositivo (localStorage).
+   Estrutura de tabelas esperada (rode isso no SQL editor do Supabase):
+
+   create table produtos (
+     id uuid primary key default gen_random_uuid(),
+     nome text not null,
+     categoria text not null,               -- 'alimenticio' | 'material'
+     tipo_material text,
+     tema text,
+     cor text,
+     controle text not null,                -- 'weight' | 'unit'
+     unidade text not null,                 -- 'g' | 'kg' | 'ml' | 'l' | 'un'
+     quantidade numeric not null default 0, -- estoque atual, na unidade acima
+     pacote_tamanho numeric default 0,      -- quanto vem em 1 embalagem comprada
+     pacote_preco numeric default 0,        -- preço pago pela última embalagem
+     estoque_minimo numeric default 0,
+     validade date,
+     observacao text,
+     created_at timestamp with time zone default now()
+   );
+
+   create table producoes (
+     id uuid primary key default gen_random_uuid(),
+     nome text,
+     quantidade_produzida numeric,
+     itens jsonb,
+     created_at timestamp with time zone default now()
+   );
+*/
+const SUPABASE_URL="https://lllkypkmydxapaudgmtk.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_RcPF5rz1IqU8mc89rs7g1g_sKntIuWK";
+const db=(SUPABASE_URL.startsWith("http")&&SUPABASE_ANON_KEY!=="COLE_AQUI_A_CHAVE_ANON_DO_SEU_SUPABASE")
+  ? window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+
+let products=[],productions=[],editingId=null,restockingId=null,stockChip="";
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const money=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n)||0);
+const fmt=n=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(n)||0);
+
+function go(page){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  $("page-"+page)?.classList.add("active");
+  document.querySelectorAll("[data-page]").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
+  const titles={dashboard:["Olá, Analu! 👋","Seu estoque em um só lugar."],estoque:["Estoque","Acompanhe tudo que você tem."],producao:["Produção","Use os ingredientes e atualize o estoque."],precificacao:["Precificação","Descubra o custo da sua receita."],produtos:["Produtos","Cadastre e organize seus itens."],materiais:["Materiais","Encontre seus temas rapidamente."]};
+  $("topTitle").textContent=titles[page][0];$("topSub").textContent=titles[page][1];
+  if(page==="producao"&&document.querySelectorAll(".production-row").length===0)addProductionRow();
+  if(page==="precificacao"&&document.querySelectorAll(".price-row").length===0)addPriceRow();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
+
+function saveLocal(){
+  localStorage.setItem("analu_estoque_products",JSON.stringify(products));
+  localStorage.setItem("analu_estoque_productions",JSON.stringify(productions));
+}
+function loadLocal(){
+  products=JSON.parse(localStorage.getItem("analu_estoque_products")||"[]");
+  productions=JSON.parse(localStorage.getItem("analu_estoque_productions")||"[]");
+}
+async function loadData(){
+  if(!db){loadLocal();renderAll();return}
+  try{
+    const a=await db.from("produtos").select("*").order("nome");
+    const b=await db.from("producoes").select("*").order("created_at",{ascending:false}).limit(50);
+    if(a.error)throw a.error;
+    products=a.data||[];productions=b.error?[]:(b.data||[]);
+    renderAll();
+  }catch(e){
+    loadLocal();renderAll();toast("Supabase não carregou. Mostrando os dados locais.");
+  }
+}
+
+/* ============ LÓGICA DE PACOTE / CUSTO ============
+   Cada produto tem:
+   - pacote_tamanho: quanto vem em UMA embalagem comprada (na unidade do produto)
+   - pacote_preco: quanto se paga por UMA embalagem
+   O custo por unidade base (g/ml/un) é sempre calculado a partir disso,
+   então ele não depende do estoque atual — funciona mesmo com estoque baixo ou zerado.
+*/
+function unitCost(p){
+  const size=Number(p.pacote_tamanho)||0, price=Number(p.pacote_preco)||0;
+  return size>0?price/size:0;
+}
+function totalCost(p){ return unitCost(p)*(Number(p.quantidade)||0); }
+function unitLabel(p){ return p.controle==="unit"?"un":p.unidade; }
+
+function category(p){return p.categoria==="alimenticio"?"Alimentício":"Material / usável"}
+function control(p){return p.controle==="weight"?"Peso/volume":"Unidade"}
+function displayQty(p){
+  const q=Number(p.quantidade)||0;
+  if(p.controle==="unit")return fmt(q)+" un.";
+  return fmt(q)+" "+(p.unidade==="kg"?"kg":p.unidade==="l"?"L":p.unidade);
+}
+function totalBase(p){
+  const q=Number(p.quantidade)||0;
+  if(p.controle==="unit")return q;
+  const u=p.unidade;
+  if(u==="kg")return q*1000;
+  if(u==="l")return q*1000;
+  return q;
+}
+function status(p){
+  const q=totalBase(p),m=Number(p.estoque_minimo)||0;
+  if(q<=0)return ["danger","Sem estoque"];
+  if(m>0&&q<=m)return ["attention","Estoque baixo"];
+  return ["normal","Normal"];
+}
+function iconFor(p){
+  if(p.categoria==="alimenticio")return "🥣";
+  if(p.tipo_material==="Carimbo")return "✦";
+  if(p.tipo_material==="Ejetor")return "◈";
+  if(p.tipo_material==="Cortador")return "◇";
+  return "◆";
+}
+
+function productOptions(list){
+  return (list||products).map(p=>`<option value="${esc(p.id)}">${esc(p.nome)} • ${displayQty(p)}</option>`).join("");
+}
+
+function stockItemHTML(p){
+  const [cl,tx]=status(p);
+  const cost=unitCost(p);
+  return `<div class="stock-item">
+    <div class="stock-icon">${iconFor(p)}</div>
+    <div class="stock-info">
+      <div class="stock-name">${esc(p.nome)}</div>
+      <div class="stock-detail">${category(p)}${p.tema?" • "+esc(p.tema):""}${p.cor?" • "+esc(p.cor):""}</div>
+      <span class="badge ${cl}">${tx}</span>
+    </div>
+    <div class="stock-right">
+      <div class="stock-cost">${cost>0?money(cost)+"/"+unitLabel(p):"sem preço de embalagem"}</div>
+      <div class="stock-qty">${displayQty(p)}</div>
+      <div class="stock-actions">
+        <button class="stock-edit stock-restock" onclick="openRestock('${p.id}')">Repor</button>
+        <button class="stock-edit" onclick="editProduct('${p.id}')">Editar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderDashboard(){
+  const low=products.filter(p=>status(p)[0]!=="normal").length;
+  const value=products.reduce((s,p)=>s+totalCost(p),0);
+  $("mItems").textContent=products.length;
+  $("mLow").textContent=low;
+  $("mProd").textContent=productions.length;
+  $("mValue").textContent=money(value);
+  $("dashList").innerHTML=products.slice(0,6).map(p=>{
+    const [cl,tx]=status(p);
+    return `<div class="summary-row"><div class="summary-main"><div class="summary-name">${esc(p.nome)}</div><div class="summary-meta">${category(p)} • ${control(p)}${p.tema?" • "+esc(p.tema):""}</div></div><div class="summary-stock">${displayQty(p)}<br><span class="badge ${cl}">${tx}</span></div></div>`;
+  }).join("")||`<div class="empty">Ainda não há produtos cadastrados.</div>`;
+  renderMaterialGroups("dashMaterials",true);
+}
+function renderStock(){
+  const s=($("stockSearch").value||"").toLowerCase(),f=$("stockFilter").value;
+  let arr=products.filter(p=>(!f||p.categoria===f)&&(`${p.nome} ${p.tema||""} ${p.cor||""}`).toLowerCase().includes(s));
+  if(stockChip==="low")arr=arr.filter(p=>status(p)[0]!=="normal");
+  if(stockChip==="weight")arr=arr.filter(p=>p.controle==="weight");
+  if(stockChip==="unit")arr=arr.filter(p=>p.controle==="unit");
+  $("stockList").innerHTML=arr.map(stockItemHTML).join("")||`<div class="empty">Nenhum produto encontrado.</div>`;
+}
+function renderProducts(){
+  const s=($("productSearch").value||"").toLowerCase();
+  const arr=products.filter(p=>(`${p.nome} ${p.tema||""} ${p.cor||""}`).toLowerCase().includes(s));
+  $("productList").innerHTML=arr.map(stockItemHTML).join("")||`<div class="empty">Nenhum produto cadastrado.</div>`;
+}
+function materialArr(){
+  const s=($("matSearch").value||"").toLowerCase(),t=$("matType").value;
+  return products.filter(p=>p.categoria==="material"&&(!t||p.tipo_material===t)&&(`${p.nome} ${p.tema||""} ${p.cor||""}`).toLowerCase().includes(s));
+}
+function renderMaterialGroups(id,dashboard=false){
+  const arr=dashboard?products.filter(p=>p.categoria==="material"):materialArr();
+  const groups={};
+  arr.forEach(p=>{const k=p.tema||"Sem tema";groups[k]=(groups[k]||0)+Number(p.quantidade||0)});
+  $(id).innerHTML=Object.entries(groups).map(([t,q])=>`<div class="material"><div class="mi">✦</div><b>${esc(t)}</b><span>${fmt(q)} item(ns)</span></div>`).join("")||`<div class="empty">Cadastre materiais com um tema para eles aparecerem aqui.</div>`;
+}
+function renderMaterials(){
+  renderMaterialGroups("materialCards");
+  const arr=materialArr();
+  $("materialList").innerHTML=arr.map(stockItemHTML).join("")||`<div class="empty">Nenhum material encontrado.</div>`;
+}
+function renderProductionHistory(){
+  $("productionHistory").innerHTML=productions.slice(0,12).map(p=>{
+    const itens=Array.isArray(p.itens)?p.itens:[];
+    return `<div class="history-item"><div class="history-title">${esc(p.nome||"Produção")}</div><div class="history-meta">${p.quantidade_produzida?`Rendimento: ${fmt(p.quantidade_produzida)} un. • `:""}${new Date(p.created_at||Date.now()).toLocaleString("pt-BR")}<br>${itens.map(i=>`${esc(i.produto_nome)}: ${fmt(i.quantidade)} ${esc(i.unidade||"")}`).join(" • ")}</div></div>`;
+  }).join("")||`<div class="empty">Nenhuma produção registrada.</div>`;
+}
+function renderAll(){renderDashboard();renderStock();renderProducts();renderMaterials();renderProductionHistory();fillProductionSelects();fillPriceSelects();}
+
+$("stockSearch").oninput=renderStock;$("stockFilter").onchange=renderStock;
+$("productSearch").oninput=renderProducts;$("matSearch").oninput=renderMaterials;$("matType").onchange=renderMaterials;
+document.querySelectorAll("[data-stock-chip]").forEach(b=>b.onclick=()=>{stockChip=b.dataset.stockChip;document.querySelectorAll("[data-stock-chip]").forEach(x=>x.classList.toggle("active",x===b));renderStock()});
+
+/* ============ MODAL DE PRODUTO ============ */
+function updatePackLabels(){
+  const isUnit=$("fControl").value==="unit";
+  $("unitWrap").style.display=isUnit?"none":"flex";
+  if(isUnit){
+    $("fPackSizeLabel").textContent="Quantas unidades vêm na embalagem?";
+    $("fPackSizeHelp").textContent="Normalmente 1 (ex.: 1 lata de leite condensado). Se você compra caixa com várias, informe quantas.";
+  }else{
+    const u=$("fUnit").value;
+    $("fPackSizeLabel").textContent=`Tamanho da embalagem (${u})`;
+    $("fPackSizeHelp").textContent=`Quanto vem em UMA embalagem que você compra, em ${u}. Ex.: manteiga em pacote de 200 ${u==="g"?"g":u}.`;
+  }
+  updatePackPreview();
+}
+function updatePackPreview(){
+  const cost=unitCost({pacote_tamanho:$("fPackSize").value,pacote_preco:$("fPackPrice").value});
+  const lbl=$("fControl").value==="unit"?"un":$("fUnit").value;
+  $("packPreview").textContent=cost>0?`Custo calculado: ${money(cost)} por ${lbl}`:"Preencha o tamanho e o preço da embalagem para calcular o custo automaticamente.";
+}
+function updateForm(){
+  const mat=$("fCategory").value==="material";
+  $("kindWrap").style.display=mat?"flex":"none";
+  $("themeWrap").style.display=mat?"flex":"none";
+  $("colorWrap").style.display=mat?"flex":"none";
+  updatePackLabels();
+}
+$("fCategory").onchange=updateForm;
+$("fControl").onchange=updatePackLabels;
+$("fUnit").onchange=updatePackLabels;
+$("fPackSize").oninput=updatePackPreview;
+$("fPackPrice").oninput=updatePackPreview;
+
+function openProduct(force){
+  editingId=null;$("modalTitle").textContent="Adicionar produto";
+  ["fName","fTheme","fColor","fExpiry","fObs","fPackSize"].forEach(x=>$(x).value="");
+  $("fQty").value=0;$("fMin").value=0;$("fPackPrice").value="";
+  $("fCategory").value=force==="material"?"material":"alimenticio";
+  $("fKind").value="Carimbo";
+  $("fControl").value=force==="material"?"unit":"weight";
+  $("fUnit").value="g";
+  if(force==="material")$("fPackSize").value=1;
+  updateForm();$("productModal").classList.add("open");
+}
+function editProduct(id){
+  const p=products.find(x=>String(x.id)===String(id));if(!p)return;
+  editingId=id;$("modalTitle").textContent="Editar produto";
+  $("fName").value=p.nome||"";$("fCategory").value=p.categoria||"alimenticio";$("fKind").value=p.tipo_material||"Carimbo";
+  $("fTheme").value=p.tema||"";$("fColor").value=p.cor||"";$("fControl").value=p.controle||"weight";
+  $("fQty").value=p.quantidade||0;$("fUnit").value=p.controle==="unit"?"g":(p.unidade||"g");
+  $("fPackSize").value=p.pacote_tamanho||"";$("fPackPrice").value=p.pacote_preco||"";
+  $("fMin").value=p.estoque_minimo||0;$("fExpiry").value=p.validade||"";$("fObs").value=p.observacao||"";
+  updateForm();$("productModal").classList.add("open");
+}
+function closeModal(){$("productModal").classList.remove("open")}
+$("productModal").addEventListener("click",e=>{if(e.target.id==="productModal")closeModal()});
+$("newProduct").onclick=()=>openProduct();
+
+$("saveProduct").onclick=async()=>{
+  const controle=$("fControl").value;
+  const p={
+    nome:$("fName").value.trim(),categoria:$("fCategory").value,controle,
+    unidade:controle==="unit"?"un":$("fUnit").value,
+    quantidade:Number($("fQty").value)||0,
+    pacote_tamanho:Number($("fPackSize").value)||0,
+    pacote_preco:Number($("fPackPrice").value)||0,
+    estoque_minimo:Number($("fMin").value)||0,
+    validade:$("fExpiry").value||null,observacao:$("fObs").value.trim(),
+    tipo_material:$("fCategory").value==="material"?$("fKind").value:null,tema:$("fTheme").value.trim()||null,
+    cor:$("fColor").value.trim()||null
+  };
+  if(!p.nome)return toast("Informe o nome do produto.");
+  if(editingId)p.id=editingId;
+  if(db){
+    try{
+      const q=editingId?db.from("produtos").update(p).eq("id",editingId):db.from("produtos").insert(p);
+      const {error}=await q;if(error)throw error;
+      closeModal();await loadData();toast("Produto salvo.");
+    }catch(e){toast("Erro no Supabase: "+e.message)}
+  }else{
+    if(editingId){const i=products.findIndex(x=>String(x.id)===String(editingId));products[i]={...products[i],...p}}
+    else{p.id=crypto.randomUUID();products.push(p)}
+    saveLocal();closeModal();renderAll();toast("Produto salvo neste dispositivo.");
+  }
+};
+
+/* ============ REPOR ESTOQUE ============ */
+function openRestock(id){
+  const p=products.find(x=>String(x.id)===String(id));if(!p)return;
+  restockingId=id;
+  $("restockProductName").textContent=`${p.nome} • estoque atual: ${displayQty(p)}`;
+  $("rQtyLabel").textContent=p.controle==="unit"?"Quantas embalagens/unidades você comprou?":"Quantas embalagens você comprou?";
+  $("rQty").value=1;
+  $("rPrice").value=p.pacote_preco||"";
+  updateRestockPreview();
+  $("restockModal").classList.add("open");
+}
+function closeRestock(){$("restockModal").classList.remove("open");restockingId=null}
+$("restockModal").addEventListener("click",e=>{if(e.target.id==="restockModal")closeRestock()});
+function updateRestockPreview(){
+  const p=products.find(x=>String(x.id)===String(restockingId));if(!p)return;
+  const packs=Number($("rQty").value)||0,size=Number(p.pacote_tamanho)||1;
+  const add=packs*size;
+  $("restockPreview").textContent=`Isso vai adicionar ${fmt(add)} ${unitLabel(p)} ao estoque.`;
+}
+$("rQty").oninput=updateRestockPreview;$("rPrice").oninput=updateRestockPreview;
+$("confirmRestockBtn").onclick=async()=>{
+  const p=products.find(x=>String(x.id)===String(restockingId));if(!p)return;
+  const packs=Number($("rQty").value)||0;
+  if(packs<=0)return toast("Informe uma quantidade válida.");
+  const size=Number(p.pacote_tamanho)||1;
+  const newPrice=$("rPrice").value!==""?Number($("rPrice").value):p.pacote_preco||0;
+  const add=packs*size;
+  const updated={quantidade:Number(p.quantidade)+add,pacote_preco:newPrice};
+  if(db){
+    try{
+      const {error}=await db.from("produtos").update(updated).eq("id",p.id);
+      if(error)throw error;
+      closeRestock();await loadData();toast("Estoque reposto!");
+    }catch(e){toast("Erro no Supabase: "+e.message)}
+  }else{
+    Object.assign(p,updated);saveLocal();closeRestock();renderAll();toast("Estoque reposto neste dispositivo!");
+  }
+};
+
+/* ============ PRODUÇÃO ============ */
+function setupProductionRow(row){
+  const sel=row.querySelector(".prod-select"),qty=row.querySelector(".prod-qty"),hint=row.querySelector(".pack-hint");
+  function refreshHint(){
+    const p=products.find(x=>String(x.id)===String(sel.value));
+    if(p&&Number(p.pacote_tamanho)>0){
+      hint.style.display="block";
+      hint.textContent=`📦 Usar embalagem inteira (${fmt(p.pacote_tamanho)} ${unitLabel(p)})`;
+      hint.onclick=()=>{qty.value=p.pacote_tamanho};
+    }else{
+      hint.style.display="none";
+    }
+  }
+  sel.onchange=refreshHint;
+  refreshHint();
+}
+function addProductionRow(){
+  const wrap=$("productionRows"),row=document.createElement("div");row.className="production-row";
+  row.innerHTML=`<div class="production-row-main"><select class="prod-select">${productOptions()}</select><input class="prod-qty" type="number" min="0" step="0.001" placeholder="Qtd"><button class="remove" type="button" onclick="this.closest('.production-row').remove()">×</button></div><button type="button" class="pack-hint"></button>`;
+  wrap.appendChild(row);
+  setupProductionRow(row);
+}
+function fillProductionSelects(){
+  document.querySelectorAll(".production-row").forEach(row=>{
+    const s=row.querySelector(".prod-select"),old=s.value;
+    s.innerHTML=productOptions();s.value=old;
+    setupProductionRow(row);
+  });
+}
+function clearProduction(){$("prodName").value="";$("prodYield").value="";$("productionRows").innerHTML="";addProductionRow()}
+async function finishProduction(){
+  const name=$("prodName").value.trim()||"Produção sem nome",yieldQty=Number($("prodYield").value)||0;
+  const rows=[...document.querySelectorAll(".production-row")].map(r=>({id:r.querySelector(".prod-select").value,q:Number(r.querySelector(".prod-qty").value)||0})).filter(x=>x.q>0);
+  if(!rows.length)return toast("Adicione pelo menos um item utilizado.");
+  const changes=[];
+  for(const r of rows){
+    const p=products.find(x=>String(x.id)===String(r.id));if(!p)continue;
+    if(r.q>Number(p.quantidade))return toast("Estoque insuficiente: "+p.nome);
+    changes.push({p,r});
+  }
+  if(db){
+    try{
+      for(const x of changes){
+        const {error}=await db.from("produtos").update({quantidade:Number(x.p.quantidade)-x.r.q}).eq("id",x.p.id);
+        if(error)throw error;
+      }
+      const itens=changes.map(x=>({produto_id:x.p.id,produto_nome:x.p.nome,quantidade:x.r.q,unidade:unitLabel(x.p)}));
+      const {error}=await db.from("producoes").insert({nome:name,quantidade_produzida:yieldQty,itens});
+      if(error)throw error;
+      clearProduction();await loadData();toast("Produção registrada. Estoque atualizado!");
+    }catch(e){toast("Erro ao atualizar: "+e.message)}
+  }else{
+    changes.forEach(x=>x.p.quantidade=Number(x.p.quantidade)-x.r.q);
+    productions.unshift({id:crypto.randomUUID(),nome:name,quantidade_produzida:yieldQty,itens:changes.map(x=>({produto_nome:x.p.nome,quantidade:x.r.q,unidade:unitLabel(x.p)})),created_at:new Date().toISOString()});
+    saveLocal();clearProduction();renderAll();toast("Produção registrada. Estoque atualizado!");
+  }
+}
+$("finishProduction").onclick=finishProduction;
+
+/* ============ PRECIFICAÇÃO ============ */
+function addPriceRow(){
+  const wrap=$("priceRows"),row=document.createElement("div");row.className="price-row";
+  row.innerHTML=`<select class="price-select">${products.map(p=>`<option value="${esc(p.id)}">${esc(p.nome)} (${money(unitCost(p))}/${unitLabel(p)})</option>`).join("")}</select><input class="price-qty" type="number" min="0" step="0.001" placeholder="Qtd"><button class="remove" onclick="this.parentElement.remove();calcPrice()">×</button>`;
+  wrap.appendChild(row);
+  row.querySelector(".price-select").onchange=calcPrice;row.querySelector(".price-qty").oninput=calcPrice;calcPrice();
+}
+function fillPriceSelects(){
+  document.querySelectorAll(".price-select").forEach(s=>{
+    const old=s.value;
+    s.innerHTML=products.map(p=>`<option value="${esc(p.id)}">${esc(p.nome)} (${money(unitCost(p))}/${unitLabel(p)})</option>`).join("");
+    s.value=old;
+  });
+  calcPrice();
+}
+function calcPrice(){
+  let total=0;
+  document.querySelectorAll(".price-row").forEach(r=>{
+    const p=products.find(x=>String(x.id)===String(r.querySelector(".price-select").value)),q=Number(r.querySelector(".price-qty").value)||0;
+    if(!p||!q)return;
+    total+=unitCost(p)*q;
+  });
+  $("ingredientCost").textContent=money(total);
+  const y=Math.max(Number($("priceYield").value)||1,1),unit=total/y,m=Number($("margin").value)||0;
+  $("unitCostOut").textContent=money(unit);$("suggested").textContent=money(unit*(1+m/100));
+}
+$("priceYield").oninput=calcPrice;$("margin").oninput=calcPrice;
+
+$("refresh").onclick=async()=>{await loadData();toast("Estoque atualizado.")};
+
+function toast(msg){
+  const t=$("toast");t.textContent=msg;t.classList.add("show");
+  clearTimeout(window._toast);window._toast=setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+/* ============ LOGIN (Supabase Auth) ============
+   O cadastro de usuário NÃO é público por segurança: crie o acesso
+   manualmente em Supabase > Authentication > Users > Add user,
+   com o e-mail e senha que a Analu vai usar para entrar no app.
+*/
+function showLogin(){
+  $("authOverlay").classList.add("open");
+  $("appRoot").style.display="none";
+  $("bottomNav").style.display="none";
+}
+function hideLogin(){
+  $("authOverlay").classList.remove("open");
+  $("appRoot").style.display="";
+  $("bottomNav").style.display="";
+}
+async function doLogin(){
+  const email=$("authEmail").value.trim(),password=$("authPassword").value;
+  $("authError").textContent="";
+  if(!email||!password){$("authError").textContent="Preencha e-mail e senha.";return}
+  $("authLoading").textContent="Entrando...";
+  const {error}=await db.auth.signInWithPassword({email,password});
+  $("authLoading").textContent="";
+  if(error)$("authError").textContent="E-mail ou senha incorretos.";
+}
+$("authLoginBtn").onclick=doLogin;
+$("authPassword").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
+$("authEmail").addEventListener("keydown",e=>{if(e.key==="Enter")$("authPassword").focus()});
+$("logoutBtn").onclick=async()=>{ if(db) await db.auth.signOut(); };
+
+async function checkAuth(){
+  if(!db){ hideLogin(); loadData(); return; } // Supabase não configurado: pula login
+  $("logoutBtn").style.display="flex";
+  const {data:{session}}=await db.auth.getSession();
+  if(session){hideLogin();loadData();}else{showLogin();}
+  db.auth.onAuthStateChange((_event,newSession)=>{
+    if(newSession){hideLogin();loadData();}else{showLogin();}
+  });
+}
+if(!db)$("logoutBtn").style.display="none";
+
+checkAuth();
+</script>
+</body>
+</html>
